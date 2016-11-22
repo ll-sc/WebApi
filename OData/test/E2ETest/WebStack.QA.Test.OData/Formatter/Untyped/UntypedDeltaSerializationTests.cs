@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -82,6 +83,20 @@ namespace WebStack.QA.Test.OData.Formatter.Untyped
             {
                 string name = string.Format("Name {0}", i);
                 Assert.True(name.Equals(((dynamic)returnedObject).value[i]["Name"].Value));
+                JToken o1;
+                bool exists = returnedObject.TryGetValue("value", out o1);
+                Assert.True(exists);
+                var childCount = (o1.Children().ToArray()[i].Children().Count());
+                if (i == 0)
+                {
+                    // should have all 4 properties of UntypedCustomer
+                    Assert.Equal(4, childCount);
+                }
+                else
+                {
+                    // should be missing FavoriteNumbers
+                    Assert.Equal(3, childCount);
+                }
             }
 
             for (int i=10 ; i < 15 ; i++)
@@ -128,7 +143,11 @@ namespace WebStack.QA.Test.OData.Formatter.Untyped
                 dynamic untypedCustomer = new EdmDeltaEntityObject(DeltaCustomerType);
                 untypedCustomer.Id = i;
                 untypedCustomer.Name = string.Format("Name {0}", i);
-                untypedCustomer.FavoriteNumbers = Enumerable.Range(0, i).ToArray();
+                if (i == 0)
+                {
+                    // Omit untypedCustomer.FavoriteNumbers on all but the first; should not exist 
+                    untypedCustomer.FavoriteNumbers = Enumerable.Range(0, i).ToArray();
+                }
                 changedCollection.Add(untypedCustomer);
             }
 
